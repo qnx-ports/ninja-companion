@@ -1,0 +1,58 @@
+pkgname=ninja
+pkgver=1.13.1
+pkgrel=2
+pkgdesc="A small build system with a focus on speed"
+url="https://ninja-build.org/"
+arch="all"
+license="Apache-2.0"
+depends="qnx-io-sock libc++"
+makedepends="cmake qnx-io-sock-dev libc++-dev clang"
+checkdepends="gtest-dev"
+depends_dev=$makedepends
+source="${pkgname}-${pkgver}.tar.gz::https://codeload.github.com/ninja-build/ninja/tar.gz/refs/tags/v${pkgver}
+        not-use-linux-specific.patch
+        "
+builddir=${srcdir}/${pkgname}-${pkgver}
+
+build() {
+    extra_cmake_args=""
+    if [[ $CBUILD = $CHOST ]]; then
+        # Compile natively
+        extra_cmake_args=""
+    else
+        # Cross compiling
+        extra_cmake_args="-DCMAKE_TOOLCHAIN_FILE=${CBUILDROOT}/usr/share/qnx/qnx_toolchain.cmake"
+    fi
+    
+    CXXFLAGS=-D_QNX_SOURCE
+    cmake_args="${extra_cmake_args} \
+                -DCMAKE_INSTALL_PREFIX=/usr \
+                -DCMAKE_STAGING_PREFIX=/usr \
+                -DCMAKE_EXE_LINKER_FLAGS=-Wl,-lm,-lregex,-lsocket,-lgcc_s,-z,execstack,-z,stack-size=8388608 \
+                -DCMAKE_BUILD_TYPE=release \
+                -DBUILD_TESTING=ON \
+                "
+
+    CC="clang" \
+    CXX="clang++" \
+    BUILD_ROOT=${CBUILDROOT} \
+    cmake ${cmake_args} -DCMAKE_CXX_FLAGS='-D_QNX_SOURCE' -B ./build
+	cd $builddir/build
+	make
+}
+
+check() {
+    cd $builddir/build
+    # SIGHUP a.k.a signal hang up is not supported on QNX
+    ./ninja_test --gtest_filter=-SubprocessTest.InterruptChildWithSigHup
+}
+
+package() {
+    cd $builddir/build
+    make DESTDIR="${pkgdir}" install
+}
+
+sha512sums="
+ec94d42967b962d66ab0747fcb9d095510117159de0473ec08df47a657895aa2523f920798e4608d0c6cf0e2e382512c14aec8a54ea58b6cd4b01edd3a7c8e62  ninja-1.13.1.tar.gz
+fda6670ed92d56b73d67244c1f00365a419aaea4b7e213a344c7d841d528e9df324628d1661da5b6189fc17eb233e3c5e501663e8bf53875797e92b247eb1147  not-use-linux-specific.patch
+"
