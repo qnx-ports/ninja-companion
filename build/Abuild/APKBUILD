@@ -1,6 +1,6 @@
 pkgname=ninja
 pkgver=1.13.1
-pkgrel=2
+pkgrel=${pkgrel:-0}
 pkgdesc="A small build system with a focus on speed"
 url="https://ninja-build.org/"
 arch="all"
@@ -52,6 +52,7 @@ package() {
     make DESTDIR="${pkgdir}" install
 }
 
+options="$options ${DISABLE_CHECK:+!check}"
 sha512sums="
 ec94d42967b962d66ab0747fcb9d095510117159de0473ec08df47a657895aa2523f920798e4608d0c6cf0e2e382512c14aec8a54ea58b6cd4b01edd3a7c8e62  ninja-1.13.1.tar.gz
 fda6670ed92d56b73d67244c1f00365a419aaea4b7e213a344c7d841d528e9df324628d1661da5b6189fc17eb233e3c5e501663e8bf53875797e92b247eb1147  not-use-linux-specific.patch
